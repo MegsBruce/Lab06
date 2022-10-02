@@ -1,20 +1,130 @@
-## My pagedown rendered CV
+---
+title: "MadeUpResume"
+author: Megan Bruce
+date: "`r Sys.Date()`"
+output:
+  pagedown::html_resume:
+    css: ['css/custom_resume.css', 'css/styles.css', 'resume']
+    # set it to true for a self-contained HTML page but it'll take longer to render
+    self_contained: true
+---
 
-This repo contains the source-code and results of my CV built with the [pagedown package](https://pagedown.rbind.io) and a modified version of the 'resume' template. 
+```{r, include = FALSE}
 
-The main files are:
+library(knitr)
+library(magrittr)
+library(tidyverse)
+library(glue)
+```
 
-- `index.Rmd`: Source template for the cv, contains a variable `PDF_EXPORT` in the header that changes styles for pdf vs html. 
-- `index.html`: The final output of the template when the header variable `PDF_EXPORT` is set to `FALSE`. View it at [nickstrayer.me/cv](http://nickstrayer.me/cv).
-- `strayer_cv.pdf`: The final exported pdf as rendered by Chrome on my mac laptop. Links are put in footer and notes about online version are added. 
-- `resume.Rmd`: Source template for single page resume. 
-- `strayer_resume.pdf`: Result for single page resume.
-- `positions.csv`: A csv with columns encoding the various fields needed for a position entry in the CV. A column `section` is also available so different sections know which rows to use.
-- `css/`: Directory containing the custom CSS files used to tweak the default 'resume' format from pagedown. 
+```{r, include=FALSE}
 
-## Want to use this to build your own CV/resume? 
+knitr::opts_chunk$set(
+  results='asis', 
+  echo = FALSE
+)
 
-1. Fork, clone, download the zip of this repo to your machine with RStudio.
-2. Go through and personalize the supplementary text in the Rmd you desire (`index.Rmd` for CV, `resume.Rmd` for resume).
-3. Using your spreadsheet editor of choice, replace the rows of `positions.csv` with your positions.
-3. Print each unique `section` (as encoded in the `section` column of `positions.csv`) in your `.Rmd` with the command `position_data %>% print_section('education')`.
+# Set this to true to have links turned into footnotes at the end of the document
+PDF_EXPORT <- FALSE
+
+# Holds all the links that were inserted for placement at the end
+links <- c()
+
+source('C:/Users/thebr/Documents/cv/parsing_functions.R')
+
+
+# First let's get the data, filtering to only the items tagged as
+# Resume items
+
+position_data <- read_csv('C:/Users/thebr/Documents/cv/positions.csv') %>% 
+  filter(in_resume) %>% 
+  mutate(
+    # Build some custom sections by collapsing others
+    section = case_when(
+      section %in% c('research_positions', 'industry_positions') ~ 'positions', 
+      section %in% c('data_science_writings', 'by_me_press') ~ 'writings',
+      TRUE ~ section
+    )
+  ) 
+
+
+```
+
+# Aside
+
+## Contact {#contact}
+
+-   <i class="fa fa-envelope"></i> [mlankfor\@asu.edu](mailto:mlankfor@asu.edu){.email}
+-   <i class="fa fa-github"></i> github.com/MegsBruce
+-   <i class="fa fa-phone"></i> (800) 876-5309
+
+## Language Skills {#skills}
+
+```{r}
+skills <- tribble(
+  ~skill,               ~level,
+  "Nerd",                  5,
+  "Klingon", 4.5,
+  "R",                2
+)
+
+build_skill_bars <- function(skills, out_of = 5){
+  bar_color <- "#969696"
+  bar_background <- "#d9d9d9"
+  skills %>% 
+    mutate(width_percent = round(100*level/out_of)) %>% 
+    glue_data(
+      "<div class = 'skill-bar'",
+      "style = \"background:linear-gradient(to right,",
+      "{bar_color} {width_percent}%,",
+      "{bar_background} {width_percent}% 100%)\" >",
+      "{skill}",
+      "</div>"
+    )
+}
+
+build_skill_bars(skills)
+
+
+```
+
+## Open Source Contributions {#open-source}
+
+All projects available at `github.com/nstrayer/<name>`
+
+-   `shinysense`: R package to use sensor data in Shiny apps
+-   `tuftesque`: Hugo theme (behind LiveFreeOrDichotomize.com)
+-   `slid3r`: D3 add-on for fully svg slider inputs
+
+## More info {#more-info}
+
+I currently have three classes until graduation. I can't tell if I'm more stressed or more excited about it.
+
+## Disclaimer {#disclaimer}
+
+Made w/ [**pagedown**](https://github.com/rstudio/pagedown).
+
+Source code: [github.com/nstrayer/cv](https://github.com/nstrayer/cv).
+
+Last updated on `r Sys.Date()`.
+
+# Main
+
+## Megan Bruce {#title}
+
+```{r}
+intro_text <- "
+
+I'm currently trying to get myself through ASU's PEDA program. This is my (mostly) made-up resume for CPP527's 6th Lab." 
+
+
+cat(sanitize_links(intro_text))
+```
+
+## Education {data-icon="graduation-cap" data-concise="true"}
+
+```{r}
+
+position_data %>% print_section('education')
+
+```
